@@ -10,21 +10,23 @@ namespace Szn.Framework.UI
             Debug.LogError("Child Start...");
         }
 
-        protected override void OnSelfOpen(params object[] InParams)
+        protected override void OnSelfBeginOpen(params object[] InParams)
         {
-            base.OnSelfOpen(InParams);
+            base.OnSelfBeginOpen(InParams);
             Debug.LogError("Child Open...");
         }
 
-        protected override void OnSelfEnable()
+        protected override void OnSelfHierarchyEnable()
         {
-            base.OnSelfEnable();
+            base.OnSelfHierarchyEnable();
+            
             Debug.LogError("Child Enable...");
         }
 
-        protected override void OnSelfDisable()
+        protected override void OnSelfHierarchyDisable()
         {
-            base.OnSelfDisable();
+            base.OnSelfHierarchyDisable();
+
             Debug.LogError("Child Disable...");
         }
 

@@ -8,22 +8,24 @@ namespace Szn.Framework.UI
     public class UIBase : MonoBehaviour
     {
         public Transform Trans { get; private set; }
-        public sealed class UIAnimator
+
+        public sealed class UIBaseHandle
         {
-            public readonly bool HasAnim;
-            public readonly bool HasOpenAnim;
-            public readonly bool HasCloseAnim;
+            private readonly UIBase bindUIBase;
+            private readonly bool hasOpenAnim;
+            private readonly bool hasCloseAnim;
 
             private readonly Animator anim;
             private bool isAnimPlaying;
 
-            private WaitForSeconds waitOpenAnim;
-            private WaitForSeconds waitCloseAnim;
-            public UIAnimator(Transform InRoot)
+            private readonly WaitForSeconds waitOpenAnim;
+            private readonly WaitForSeconds waitCloseAnim;
+
+            public UIBaseHandle(UIBase InUIBase, Transform InRoot)
             {
-                HasAnim = false;
-                HasOpenAnim = false;
-                HasCloseAnim = false;
+                bindUIBase = InUIBase;
+                hasOpenAnim = false;
+                hasCloseAnim = false;
 
                 anim = InRoot.Find(UIConfig.ANIM_ROOT_GAME_OBJ_NAME_S)?.GetComponent<Animator>();
                 if (anim == null) return;
@@ -32,84 +34,85 @@ namespace Szn.Framework.UI
                 if (animClipDict.TryGetValue(UIConfig.OPEN_UI_ANIM_NAME_S, out var openAnimClip) &&
                     null != openAnimClip)
                 {
-                    HasAnim = true;
+                    hasOpenAnim = true;
                     waitOpenAnim = new WaitForSeconds(openAnimClip.length);
                 }
 
                 if (animClipDict.TryGetValue(UIConfig.CLOSE_UI_ANIM_NAME_S, out var closeAnimClip) &&
                     null != closeAnimClip)
                 {
-                    HasCloseAnim = true;
+                    hasCloseAnim = true;
                     waitCloseAnim = new WaitForSeconds(closeAnimClip.length);
                 }
-
-                HasAnim = HasOpenAnim || HasCloseAnim;
             }
-
-            public IEnumerator PlayOpenAnim()
-            {
-                if(!HasOpenAnim) yield break;
-                
-                while (isAnimPlaying)
-                {
-                    yield return null;
-                }
-
-                isAnimPlaying = true;
-                
-                anim.SetTrigger(UIConfig.OPEN_UI_ANIM_NAME_S);
-
-                yield return waitOpenAnim;
-
-                isAnimPlaying = false;
-            }
-
-            public IEnumerator PlayCloseAnim()
-            {
-                if(!HasCloseAnim) yield break;
-                
-                while (isAnimPlaying)
-                {
-                    yield return null;
-                }
-
-                isAnimPlaying = true;
-                
-                anim.SetTrigger(UIConfig.CLOSE_UI_ANIM_NAME_S);
-
-                yield return waitCloseAnim;
-
-                isAnimPlaying = false;
-            }
-        }
-
-        public sealed class UIBaseHandle
-        {
-            private readonly UIBase bindUIBase;
-
-            public UIBaseHandle(UIBase InUIBase)
-            {
-                bindUIBase = InUIBase;
-            }
-
+            
             public void SelfLoaded()
             {
                 bindUIBase.OnSelfLoaded();
             }
 
-            public void SelfOpen(params object[] InParams)
+            public IEnumerator SelfOpen(params object[] InParams)
             {
-                bindUIBase.OnSelfOpen(InParams);
+                if (!hasOpenAnim)
+                {
+                    bindUIBase.OnSelfBeginOpen(InParams);
+                    bindUIBase.OnSelfOpened();
+                    yield break;
+                }
+
+                while (isAnimPlaying)
+                {
+                    yield return null;
+                }
+
+                bindUIBase.OnSelfBeginOpen(InParams);
+                
+                isAnimPlaying = true;
+
+                anim.SetTrigger(UIConfig.OPEN_UI_ANIM_NAME_S);
+
+                yield return waitOpenAnim;
+
+                isAnimPlaying = false;
+                
+                bindUIBase.OnSelfOpened();
             }
 
-            public void SelfEnable()
+            public IEnumerator SelfClose()
             {
-                bindUIBase.OnSelfEnable();
+                if (!hasCloseAnim)
+                {
+                    bindUIBase.OnSelfBeginClose();
+                    bindUIBase.OnSelfClosed();
+                    yield break;
+                }
+
+                while (isAnimPlaying)
+                {
+                    yield return null;
+                }
+
+                bindUIBase.OnSelfBeginClose();
+                
+                isAnimPlaying = true;
+
+                anim.SetTrigger(UIConfig.CLOSE_UI_ANIM_NAME_S);
+
+                yield return waitCloseAnim;
+
+                isAnimPlaying = false;
+                
+                bindUIBase.OnSelfClosed();
+            }
+            
+            public void SelfHierarchyEnable()
+            {
+                bindUIBase.OnSelfHierarchyEnable();
             }
 
-            public void SelfDisable()
+            public void SelfHierarchyDisable()
             {
-                bindUIBase.OnSelfDisable();
+                bindUIBase.OnSelfHierarchyDisable();
             }
 
             public void SelfDestroy()
@@ -119,14 +122,13 @@ namespace Szn.Framework.UI
         }
 
         public UIBaseHandle Handle { get; private set; }
-        
-        public UIAnimator UIAnim{ get; private set; }
+
 
         private void Awake()
         {
             Trans = transform;
-            Handle = new UIBaseHandle(this);
-            UIAnim = new UIAnimator(Trans);
+
+            Handle = new UIBaseHandle(this, Trans);
         }
 
         protected virtual void OnSelfLoaded()
@@ -134,21 +136,36 @@ namespace Szn.Framework.UI
             Debug.LogError("Parent OnSelfStart");
         }
 
-        protected virtual void OnSelfOpen(params object[] InParams)
+        protected virtual void OnSelfBeginOpen(params object[] InParams)
         {
             Debug.LogError("Parent OnSelfOpen");
         }
 
-        protected virtual void OnSelfEnable()
+        protected virtual void OnSelfOpened()
         {
-            Debug.LogError("Parent OnSelfEnable");
+            Debug.LogError("Parent OnSelfOpened");
         }
 
-        protected virtual void OnSelfDisable()
+        protected virtual void OnSelfBeginClose()
         {
-            Debug.LogError("Parent OnSelfDisable");
+            Debug.LogError("Parent OnSelfBeginClose");
         }
 
+        protected virtual void OnSelfClosed()
+        {
+            Debug.LogError("Parent OnSelfClosed");
+        }
+
+        protected virtual void OnSelfHierarchyEnable()
+        {
+            Debug.LogError("Parent OnSelfHierarchyEnable");
+        }
+
+        protected virtual void OnSelfHierarchyDisable()
+        {
+            Debug.LogError("Parent OnSelfHierarchyDisable");
+        }
+        
         protected virtual void OnSelfDestroy()
         {
             Debug.LogError("Parent OnSelfDestroy");
