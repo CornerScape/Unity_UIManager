@@ -7,7 +7,10 @@ namespace Szn.Framework.UI
 {
     public class UIBase : MonoBehaviour
     {
+        public GameObject GameObj { get; private set; }
         public Transform Trans { get; private set; }
+        
+        public UIKey Key { get; private set; }
 
         public sealed class UIBaseHandle
         {
@@ -20,13 +23,21 @@ namespace Szn.Framework.UI
 
             private readonly WaitForSeconds waitOpenAnim;
             private readonly WaitForSeconds waitCloseAnim;
-
+            private readonly CanvasGroup canvasGroup;
             public UIBaseHandle(UIBase InUIBase, Transform InRoot)
             {
                 bindUIBase = InUIBase;
                 hasOpenAnim = false;
                 hasCloseAnim = false;
 
+                canvasGroup = InRoot.GetComponent<CanvasGroup>();
+                if (null == canvasGroup)
+                {
+                    Debug.LogError("Canvas Group Not Found.");
+                }
+                
+                Debug.LogError($"get canvas group = {canvasGroup == null}");
+                
                 anim = InRoot.Find(UIConfig.ANIM_ROOT_GAME_OBJ_NAME_S)?.GetComponent<Animator>();
                 if (anim == null) return;
 
@@ -46,8 +57,9 @@ namespace Szn.Framework.UI
                 }
             }
             
-            public void SelfLoaded()
+            public void SelfLoaded(UIKey InUIKey)
             {
+                bindUIBase.Key = InUIKey;
                 bindUIBase.OnSelfLoaded();
             }
 
@@ -56,6 +68,8 @@ namespace Szn.Framework.UI
                 if (!hasOpenAnim)
                 {
                     bindUIBase.OnSelfBeginOpen(InParams);
+                    canvasGroup.alpha = 1;
+                    canvasGroup.blocksRaycasts = true;
                     bindUIBase.OnSelfOpened();
                     yield break;
                 }
@@ -83,6 +97,8 @@ namespace Szn.Framework.UI
                 if (!hasCloseAnim)
                 {
                     bindUIBase.OnSelfBeginClose();
+                    canvasGroup.alpha = 0;
+                    canvasGroup.blocksRaycasts = false;
                     bindUIBase.OnSelfClosed();
                     yield break;
                 }
@@ -126,9 +142,13 @@ namespace Szn.Framework.UI
 
         private void Awake()
         {
+            GameObj = gameObject;
+            
             Trans = transform;
 
             Handle = new UIBaseHandle(this, Trans);
+            
+            Debug.LogError("<----------->");
         }
 
         protected virtual void OnSelfLoaded()

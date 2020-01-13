@@ -1,5 +1,15 @@
 ﻿namespace Szn.Framework.UI
 {
+    public enum UIKey
+    {
+        A,
+        B,
+        C,
+        D,
+        E,
+        Max
+    }
+    
     public static class UIConfig
     {
         public const string ANIM_ROOT_GAME_OBJ_NAME_S = "Panel";
