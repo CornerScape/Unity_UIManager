@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,18 +7,18 @@ namespace Szn.Framework.UI
 {
     public class UIManager : MonoBehaviour
     {
-        private static UIManager _instance;
+        private static UIManager instance;
 
         public static UIManager Instance
         {
             get
             {
-                if (null == _instance)
+                if (null == instance)
                 {
-                    _instance = new GameObject("UI Manager").AddComponent<UIManager>();
+                    instance = new GameObject("UI Manager").AddComponent<UIManager>();
                 }
 
-                return _instance;
+                return instance;
             }
         }
 
@@ -55,7 +56,7 @@ namespace Szn.Framework.UI
         private UINode uiHistoryTail;
 
         private Transform uiRoot;
-        
+
         private CanvasGroup maskCanvasGroup;
         private int maskTimes;
 
@@ -83,9 +84,9 @@ namespace Szn.Framework.UI
 
         private void Awake()
         {
-            if (_instance == null)
+            if (instance == null)
             {
-                _instance = this;
+                instance = this;
                 DontDestroyOnLoad(gameObject);
             }
             else
@@ -93,6 +94,7 @@ namespace Szn.Framework.UI
                 Debug.LogError("Multiple ui manager found.");
                 DestroyImmediate(gameObject);
             }
+
             uiQueue = new Queue<UIParam>((int) UIKey.Max);
             Transform trans = transform;
             maskCanvasGroup = trans.Find("UIMask").GetComponent<CanvasGroup>();
@@ -105,6 +107,37 @@ namespace Szn.Framework.UI
             if (null == uiRoot)
             {
                 Debug.LogError("UI root");
+            }
+
+            isAutoRotation = Screen.orientation == ScreenOrientation.AutoRotation;
+
+            if (isAutoRotation)
+            {
+                isAutoRotation = ((Screen.autorotateToPortrait ? 1 : 0) +
+                                  (Screen.autorotateToPortraitUpsideDown ? 1 : 0) +
+                                  (Screen.autorotateToLandscapeLeft ? 1 : 0) +
+                                  (Screen.autorotateToLandscapeRight ? 1 : 0)) 
+                                 > 1;
+            }
+        }
+
+        private bool isAutoRotation;
+        private ScreenOrientation currentScreenOrientation;
+
+        private void CheckScreenOrientation()
+        {
+            if (currentScreenOrientation != Screen.orientation)
+            {
+                currentScreenOrientation = Screen.orientation;
+                UITools.UpdateAdaptData();
+            }
+        }
+
+        private void Update()
+        {
+            if (isAutoRotation)
+            {
+                
             }
         }
 
@@ -146,7 +179,7 @@ namespace Szn.Framework.UI
             yield return new WaitForEndOfFrame();
 
             isUIHandling = false;
-            
+
             HideMask();
         }
 
@@ -197,8 +230,8 @@ namespace Szn.Framework.UI
                 }
             }
 
-            if(null != pointer.Prev) pointer.Prev.Next = pointer.Next;
-            if(null != pointer.Next) pointer.Next.Prev = pointer.Prev;
+            if (null != pointer.Prev) pointer.Prev.Next = pointer.Next;
+            if (null != pointer.Next) pointer.Next.Prev = pointer.Prev;
 
             pointer.Prev = pointer.Next = null;
 

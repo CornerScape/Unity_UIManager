@@ -9,7 +9,7 @@ namespace Szn.Framework.UI
     {
         public GameObject GameObj { get; private set; }
         public Transform Trans { get; private set; }
-        
+
         public UIKey Key { get; private set; }
 
         public sealed class UIBaseHandle
@@ -24,6 +24,7 @@ namespace Szn.Framework.UI
             private readonly WaitForSeconds waitOpenAnim;
             private readonly WaitForSeconds waitCloseAnim;
             private readonly CanvasGroup canvasGroup;
+
             public UIBaseHandle(UIBase InUIBase, Transform InRoot)
             {
                 bindUIBase = InUIBase;
@@ -33,30 +34,58 @@ namespace Szn.Framework.UI
                 canvasGroup = InRoot.GetComponent<CanvasGroup>();
                 if (null == canvasGroup)
                 {
-                    Debug.LogError("Canvas Group Not Found.");
-                }
-                
-                Debug.LogError($"get canvas group = {canvasGroup == null}");
-                
-                anim = InRoot.Find(UIConfig.ANIM_ROOT_GAME_OBJ_NAME_S)?.GetComponent<Animator>();
-                if (anim == null) return;
-
-                Dictionary<string, AnimationClip> animClipDict = anim.GetAnimationClipDict();
-                if (animClipDict.TryGetValue(UIConfig.OPEN_UI_ANIM_NAME_S, out var openAnimClip) &&
-                    null != openAnimClip)
-                {
-                    hasOpenAnim = true;
-                    waitOpenAnim = new WaitForSeconds(openAnimClip.length);
+                    Debug.LogError("Non-conforming UI hierarchy!\nNo CanvasGroup was found!");
                 }
 
-                if (animClipDict.TryGetValue(UIConfig.CLOSE_UI_ANIM_NAME_S, out var closeAnimClip) &&
-                    null != closeAnimClip)
+                Transform panelTrans = InRoot.Find(UIConfig.ANIM_ROOT_GAME_OBJ_NAME_S);
+
+                if (null == panelTrans)
                 {
-                    hasCloseAnim = true;
-                    waitCloseAnim = new WaitForSeconds(closeAnimClip.length);
+                    Debug.LogError(
+                        $"Non-conforming UI hierarchy!\nNo anim root named '{UIConfig.ANIM_ROOT_GAME_OBJ_NAME_S}' was found!");
+                }
+                else
+                {
+                    anim = panelTrans.GetComponent<Animator>();
+                    if (anim != null)
+                    {
+                        Dictionary<string, AnimationClip> animClipDict = anim.GetAnimationClipDict();
+                        if (animClipDict.TryGetValue(UIConfig.OPEN_UI_ANIM_NAME_S, out var openAnimClip) &&
+                            null != openAnimClip)
+                        {
+                            hasOpenAnim = true;
+                            waitOpenAnim = new WaitForSeconds(openAnimClip.length);
+                        }
+
+                        if (animClipDict.TryGetValue(UIConfig.CLOSE_UI_ANIM_NAME_S, out var closeAnimClip) &&
+                            null != closeAnimClip)
+                        {
+                            hasCloseAnim = true;
+                            waitCloseAnim = new WaitForSeconds(closeAnimClip.length);
+                        }
+                    }
+                    
+                    RectTransform contentRectTrans = panelTrans.Find(UIConfig.CONTENT_ROOT_GAME_OBJ_NAME_S)
+                        ?.GetComponent<RectTransform>();
+                    if (null == contentRectTrans)
+                    {
+                        Debug.LogError(
+                            $"Non-conforming UI hierarchy!\nNo content root named '{UIConfig.CONTENT_ROOT_GAME_OBJ_NAME_S}' was found!");
+                    }
+                    else
+                    {
+                        contentRectTrans.ContentAdapt();
+                    }
+
+                    RectTransform bgRectTrans = panelTrans.Find(UIConfig.BACKGROUND_ROOT_GAME_OBJ_NAME_S)
+                        ?.GetComponent<RectTransform>();
+                    if (null != bgRectTrans)
+                    {
+                        bgRectTrans.BackgroundAdapt();
+                    }
                 }
             }
-            
+
             public void SelfLoaded(UIKey InUIKey)
             {
                 bindUIBase.Key = InUIKey;
@@ -80,7 +109,7 @@ namespace Szn.Framework.UI
                 }
 
                 bindUIBase.OnSelfBeginOpen(InParams);
-                
+
                 isAnimPlaying = true;
 
                 anim.SetTrigger(UIConfig.OPEN_UI_ANIM_NAME_S);
@@ -88,7 +117,7 @@ namespace Szn.Framework.UI
                 yield return waitOpenAnim;
 
                 isAnimPlaying = false;
-                
+
                 bindUIBase.OnSelfOpened();
             }
 
@@ -109,7 +138,7 @@ namespace Szn.Framework.UI
                 }
 
                 bindUIBase.OnSelfBeginClose();
-                
+
                 isAnimPlaying = true;
 
                 anim.SetTrigger(UIConfig.CLOSE_UI_ANIM_NAME_S);
@@ -117,10 +146,10 @@ namespace Szn.Framework.UI
                 yield return waitCloseAnim;
 
                 isAnimPlaying = false;
-                
+
                 bindUIBase.OnSelfClosed();
             }
-            
+
             public void SelfHierarchyEnable()
             {
                 bindUIBase.OnSelfHierarchyEnable();
@@ -143,11 +172,11 @@ namespace Szn.Framework.UI
         private void Awake()
         {
             GameObj = gameObject;
-            
+
             Trans = transform;
 
             Handle = new UIBaseHandle(this, Trans);
-            
+
             Debug.LogError("<----------->");
         }
 
@@ -185,7 +214,7 @@ namespace Szn.Framework.UI
         {
             Debug.LogError("Parent OnSelfHierarchyDisable");
         }
-        
+
         protected virtual void OnSelfDestroy()
         {
             Debug.LogError("Parent OnSelfDestroy");
