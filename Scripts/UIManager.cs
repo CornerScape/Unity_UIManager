@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Szn.Framework.UtilPackage;
 using UnityEngine;
 
 namespace Szn.Framework.UI
@@ -21,6 +22,10 @@ namespace Szn.Framework.UI
                 return instance;
             }
         }
+
+        public static UIToast Toast { get; private set; }
+
+        public static UIDialog Dialog { get; private set; }
 
         private class UIParam
         {
@@ -60,6 +65,8 @@ namespace Szn.Framework.UI
         private CanvasGroup maskCanvasGroup;
         private int maskTimes;
 
+        private ScreenOrientation currentScreenOrientation;
+
         private void ShowMask()
         {
             Debug.Log("--- Lock --- FrameCount: " + Time.frameCount + "  Lock Count: " + maskTimes);
@@ -95,8 +102,12 @@ namespace Szn.Framework.UI
                 DestroyImmediate(gameObject);
             }
 
-            uiQueue = new Queue<UIParam>((int) UIKey.Max);
             Transform trans = transform;
+
+            Toast = trans.Find("UIToast").GetComponent<UIToast>();
+
+            Dialog = trans.Find("UIDialog").GetComponent<UIDialog>();
+
             maskCanvasGroup = trans.Find("UIMask").GetComponent<CanvasGroup>();
             if (null == maskCanvasGroup)
             {
@@ -109,36 +120,42 @@ namespace Szn.Framework.UI
                 Debug.LogError("UI root");
             }
 
-            isAutoRotation = Screen.orientation == ScreenOrientation.AutoRotation;
-
-            if (isAutoRotation)
-            {
-                isAutoRotation = ((Screen.autorotateToPortrait ? 1 : 0) +
-                                  (Screen.autorotateToPortraitUpsideDown ? 1 : 0) +
-                                  (Screen.autorotateToLandscapeLeft ? 1 : 0) +
-                                  (Screen.autorotateToLandscapeRight ? 1 : 0)) 
-                                 > 1;
-            }
+            uiQueue = new Queue<UIParam>((int) UIKey.Max);
         }
 
-        private bool isAutoRotation;
-        private ScreenOrientation currentScreenOrientation;
-
-        private void CheckScreenOrientation()
+        private void Start()
         {
-            if (currentScreenOrientation != Screen.orientation)
+            currentScreenOrientation = Screen.orientation;
+            DeviceTools.ScreenOrientationEvent += InOrientation =>
             {
-                currentScreenOrientation = Screen.orientation;
-                UITools.UpdateAdaptData();
-            }
-        }
+                if (InOrientation == currentScreenOrientation) return;
 
-        private void Update()
-        {
-            if (isAutoRotation)
+                UIAdapt.UpdateData();
+
+                foreach (UIParam uiParam in uiQueue)
+                {
+                    UIBase uiBase = uiParam.HandleBase;
+                    if (uiBase.IsOpening)
+                    {
+                        uiBase.Handle.SelfAdapt();
+                    }
+                }
+            };
+
+            UnityGuiTest.UnityGUIAction += () =>
             {
-                
-            }
+                if (GUILayout.Button("Ok"))
+                {
+                    Dialog.Show("Msg", "I am dialog msg", "ok", () => { Debug.LogError("I am Ok."); });
+                }
+
+                if (GUILayout.Button("Cancel"))
+                {
+                    Dialog.Show("Msg", "I am dialog msg can cancel", "ok", "Cancel",
+                        () => { Debug.LogError("I am Ok."); },
+                        () => { Debug.LogError("I am Cancel."); });
+                }
+            };
         }
 
         public UIBase GetCurrentUI()

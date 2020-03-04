@@ -11,6 +11,8 @@ namespace Szn.Framework.UI
         public Transform Trans { get; private set; }
 
         public UIKey Key { get; private set; }
+        
+        public bool IsOpening { get; private set; }
 
         public sealed class UIBaseHandle
         {
@@ -24,6 +26,9 @@ namespace Szn.Framework.UI
             private readonly WaitForSeconds waitOpenAnim;
             private readonly WaitForSeconds waitCloseAnim;
             private readonly CanvasGroup canvasGroup;
+
+            private readonly RectTransform contentRectTrans;
+            private readonly RectTransform bgRectTrans;
 
             public UIBaseHandle(UIBase InUIBase, Transform InRoot)
             {
@@ -64,8 +69,8 @@ namespace Szn.Framework.UI
                             waitCloseAnim = new WaitForSeconds(closeAnimClip.length);
                         }
                     }
-                    
-                    RectTransform contentRectTrans = panelTrans.Find(UIConfig.CONTENT_ROOT_GAME_OBJ_NAME_S)
+
+                    contentRectTrans = panelTrans.Find(UIConfig.CONTENT_ROOT_GAME_OBJ_NAME_S)
                         ?.GetComponent<RectTransform>();
                     if (null == contentRectTrans)
                     {
@@ -77,7 +82,7 @@ namespace Szn.Framework.UI
                         contentRectTrans.ContentAdapt();
                     }
 
-                    RectTransform bgRectTrans = panelTrans.Find(UIConfig.BACKGROUND_ROOT_GAME_OBJ_NAME_S)
+                    bgRectTrans = panelTrans.Find(UIConfig.BACKGROUND_ROOT_GAME_OBJ_NAME_S)
                         ?.GetComponent<RectTransform>();
                     if (null != bgRectTrans)
                     {
@@ -150,6 +155,13 @@ namespace Szn.Framework.UI
                 bindUIBase.OnSelfClosed();
             }
 
+            public void SelfAdapt()
+            {
+                contentRectTrans.ContentAdapt();
+
+                if (null != bgRectTrans) bgRectTrans.BackgroundAdapt();
+            }
+
             public void SelfHierarchyEnable()
             {
                 bindUIBase.OnSelfHierarchyEnable();
@@ -167,8 +179,7 @@ namespace Szn.Framework.UI
         }
 
         public UIBaseHandle Handle { get; private set; }
-
-
+        
         private void Awake()
         {
             GameObj = gameObject;

@@ -2,14 +2,14 @@
 
 namespace Szn.Framework.UI
 {
-    public static class UITools
+    public static class UIAdapt
     {
         private static readonly Vector2 halfVector2 = new Vector2(.5f, .5f);
         private static Vector2 contentOffsetMin;
         private static Vector2 contentOffsetMax;
         private static Vector3 bgLocalScale;
 
-        public static void UpdateAdaptData()
+        public static void UpdateData()
         {
             float width = Screen.width;
             float height = Screen.height;
@@ -35,7 +35,7 @@ namespace Szn.Framework.UI
                       (height - safeAreaRect.height - safeAreaRect.y) * reciprocalCurrentScale));
 
             float scale = maxScale * reciprocalCurrentScale;
-            bgLocalScale = new Vector3(maxScale, maxScale, maxScale);
+            bgLocalScale = new Vector3(scale, scale, scale);
         }
 
         public static void ContentAdapt(this RectTransform InContentRectTrans)
